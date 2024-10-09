@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Calculator & Clock In/Out System</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --background-color: #ecf0f1;
+            --text-color: #34495e;
+            --shadow-color: #bdc3c7;
+        }
+
+        .dark-mode {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --background-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --shadow-color: #1a252f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background-color: var(--background-color);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 8px 8px 15px var(--shadow-color), -8px -8px 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .time-calculator, .clock-system {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        input, button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 10px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-size: 1rem;
+            box-shadow: inset 2px 2px 5px var(--shadow-color), inset -2px -2px 5px rgba(255, 255, 255, 0.5);
+        }
+
+        button {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .result {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+
+        .clock-log {
+            margin-top: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .dark-mode-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dark-mode-toggle:hover {
+            background-color: var(--secondary-color);
+        }
+
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            opacity: 0.1;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Time Calculator & Clock In/Out System</h1>
+        
+        <div class="card time-calculator">
+            <h2>Time Calculator</h2>
+            <input type="number" id="hours1" placeholder="Hours">
+            <input type="number" id="minutes1" placeholder="Minutes">
+            <input type="number" id="hours2" placeholder="Hours">
+            <input type="number" id="minutes2" placeholder="Minutes">
+            <button onclick="addTime()">Add</button>
+            <button onclick="subtractTime()">Subtract</button>
+            <div class="result" id="calculatorResult"></div>
+        </div>
+
+        <div class="card clock-system">
+            <h2>Clock In/Out System</h2>
+            <button id="clockInBtn" onclick="clockIn()">Clock In</button>
+            <button id="clockOutBtn" onclick="clockOut()">Clock Out</button>
+            <input type="datetime-local" id="manualTime">
+            <button onclick="editClockIn()">Edit Clock In</button>
+            <div class="result" id="clockStatus"></div>
+            <div class="clock-log" id="clockLog"></div>
+        </div>
+    </div>
+
+    <button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓</button>
+
+    <script>
+        // Time Calculator
+        function addTime() {
+            const [h1, m1] = getTimeInputs('1');
+            const [h2, m2] = getTimeInputs('2');
+            const totalMinutes = (h1 + h2) * 60 + m1 + m2;
+            displayResult(totalMinutes, 'add');
+        }
+
+        function subtractTime() {
+            const [h1, m1] = getTimeInputs('1');
+            const [h2, m2] = getTimeInputs('2');
+            const totalMinutes = (h1 * 60 + m1) - (h2 * 60 + m2);
+            displayResult(totalMinutes, 'subtract');
+        }
+
+        function getTimeInputs(suffix) {
+            const hours = parseInt(document.getElementById(`hours${suffix}`).value) || 0;
+            const minutes = parseInt(document.getElementById(`minutes${suffix}`).value) || 0;
+            return [hours, minutes];
+        }
+
+        function displayResult(totalMinutes, operation) {
+            const hours = Math.floor(Math.abs(totalMinutes) / 60);
+            const minutes = Math.abs(totalMinutes) % 60;
+            const sign = totalMinutes < 0 && operation === 'subtract' ? '-' : '';
+            document.getElementById('calculatorResult').textContent = `Result: ${sign}${hours}h ${minutes}m`;
+        }
+
+        // Clock In/Out System
+        let clockInTime = null;
+        const clockLog = [];
+
+        function clockIn() {
+            clockInTime = new Date();
+            updateClockStatus();
+            addToLog(`Clocked in at ${formatTime(clockInTime)}`);
+        }
+
+        function clockOut() {
+            if (clockInTime) {
+                const clockOutTime = new Date();
+                const duration = calculateDuration(clockInTime, clockOutTime);
+                addToLog(`Clocked out at ${formatTime(clockOutTime)}. Duration: ${duration}`);
+                clockInTime = null;
+                updateClockStatus();
+            } else {
+                alert('You need to clock in first!');
+            }
+        }
+
+        function editClockIn() {
+            const manualTime = new Date(document.getElementById('manualTime').value);
+            if (manualTime.toString() !== "Invalid Date") {
+                clockInTime = manualTime;
+                updateClockStatus();
+                addToLog(`Clock in time manually set to ${formatTime(clockInTime)}`);
+            } else {
+                alert('Please enter a valid date and time.');
+            }
+        }
+
+        function updateClockStatus() {
+            const statusElement = document.getElementById('clockStatus');
+            if (clockInTime) {
+                statusElement.textContent = `Clocked in at ${formatTime(clockInTime)}`;
+            } else {
+                statusElement.textContent = 'Not clocked in';
+            }
+        }
+
+        function addToLog(message) {
+            clockLog.unshift(message);
+            const logElement = document.getElementById('clockLog');
+            logElement.innerHTML = clockLog.map(entry => `<p>${entry}</p>`).join('');
+        }
+
+        function formatTime(date) {
+            return date.toLocaleString('en-US', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+        }
+
+        function calculateDuration(start, end) {
+            const diff = end - start;
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            return `${hours}h ${minutes}m`;
+        }
+
+        // Dark Mode Toggle
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        }
+
+        // Initialize dark mode from localStorage
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Initialize clock status
+        updateClockStatus();
+    </script>
+</body>
+</html>
