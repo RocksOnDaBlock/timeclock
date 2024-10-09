@@ -166,10 +166,7 @@
             <h2>Clock In/Out System</h2>
             <button id="clockInBtn" onclick="clockIn()">Clock In</button>
             <button id="clockOutBtn" onclick="clockOut()">Clock Out</button>
-            <select id="editTimeSelect">
-                <option value="in">Edit Clock In</option>
-                <option value="out">Edit Clock Out</option>
-            </select>
+            <select id="editPunchSelect"></select>
             <input type="datetime-local" id="manualTime">
             <button onclick="editClockTime()">Edit Selected Time</button>
             <div class="result" id="clockStatus"></div>
@@ -234,22 +231,31 @@
         }
 
         // Clock In/Out System
-        let clockInTime = null;
-        let clockOutTime = null;
-        const clockLog = [];
+        let clockLog = [];
+        let lastAction = 'out';
 
         function clockIn() {
-            clockInTime = new Date();
-            updateClockStatus();
-            addToLog(`Clocked in at ${formatTime(clockInTime)}`);
+            if (lastAction === 'out') {
+                const clockInTime = new Date();
+                clockLog.push({ type: 'in', time: clockInTime });
+                lastAction = 'in';
+                updateClockStatus();
+                addToLog(`Clocked in at ${formatTime(clockInTime)}`);
+                savePunchData();
+            } else {
+                alert('You need to clock out first!');
+            }
         }
 
         function clockOut() {
-            if (clockInTime) {
-                clockOutTime = new Date();
-                const duration = calculateDuration(clockInTime, clockOutTime);
-                addToLog(`Clocked out at ${formatTime(clockOutTime)}. Duration: ${duration}`);
+            if (lastAction === 'in') {
+                const clockOutTime = new Date();
+                clockLog.push({ type: 'out', time: clockOutTime });
+                lastAction = 'out';
                 updateClockStatus();
+                const duration = calculateDuration(clockLog[clockLog.length - 2].time, clockOutTime);
+                addToLog(`Clocked out at ${formatTime(clockOutTime)}. Duration: ${duration}`);
+                savePunchData();
             } else {
                 alert('You need to clock in first!');
             }
@@ -258,41 +264,51 @@
         function editClockTime() {
             const manualTimeInput = document.getElementById('manualTime');
             const manualTime = new Date(manualTimeInput.value);
-            const editType = document.getElementById('editTimeSelect').value;
+            const editPunchSelect = document.getElementById('editPunchSelect');
+            const selectedIndex = editPunchSelect.selectedIndex;
             
-            if (manualTime.toString() !== "Invalid Date") {
-                if (editType === 'in') {
-                    clockInTime = manualTime;
-                    addToLog(`Clock in time manually set to ${formatTime(clockInTime)}`);
-                } else {
-                    clockOutTime = manualTime;
-                    addToLog(`Clock out time manually set to ${formatTime(clockOutTime)}`);
-                }
+            if (manualTime.toString() !== "Invalid Date" && selectedIndex !== -1) {
+                clockLog[selectedIndex].time = manualTime;
                 updateClockStatus();
+                updatePunchSelect();
+                savePunchData();
                 manualTimeInput.value = ''; // Clear the input after use
             } else {
-                alert('Please enter a valid date and time.');
+                alert('Please select a punch and enter a valid date and time.');
             }
         }
 
         function updateClockStatus() {
             const statusElement = document.getElementById('clockStatus');
-            if (clockInTime) {
-                statusElement.textContent = `Clocked in at ${formatTime(clockInTime)}`;
-                if (clockOutTime) {
-                    statusElement.textContent += `, Clocked out at ${formatTime(clockOutTime)}`;
-                    const duration = calculateDuration(clockInTime, clockOutTime);
+            if (clockLog.length > 0) {
+                const lastPunch = clockLog[clockLog.length - 1];
+                statusElement.textContent = `Last action: ${lastPunch.type === 'in' ? 'Clocked in' : 'Clocked out'} at ${formatTime(lastPunch.time)}`;
+                if (lastPunch.type === 'out' && clockLog.length > 1) {
+                    const duration = calculateDuration(clockLog[clockLog.length - 2].time, lastPunch.time);
                     statusElement.textContent += `. Duration: ${duration}`;
                 }
             } else {
-                statusElement.textContent = 'Not clocked in';
+                statusElement.textContent = 'No clock activity yet';
             }
+            updatePunchSelect();
+        }
+
+        function updatePunchSelect() {
+            const editPunchSelect = document.getElementById('editPunchSelect');
+            editPunchSelect.innerHTML = '';
+            clockLog.forEach((punch, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${punch.type === 'in' ? 'Clock In' : 'Clock Out'} - ${formatTime(punch.time)}`;
+                editPunchSelect.appendChild(option);
+            });
         }
 
         function addToLog(message) {
-            clockLog.unshift(message);
             const logElement = document.getElementById('clockLog');
-            logElement.innerHTML = clockLog.map(entry => `<p>${entry}</p>`).join('');
+            const logEntry = document.createElement('p');
+            logEntry.textContent = message;
+            logElement.insertBefore(logEntry, logElement.firstChild);
         }
 
         function formatTime(date) {
@@ -314,19 +330,43 @@
             return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
+        function savePunchData() {
+            localStorage.setItem('clockLog', JSON.stringify(clockLog));
+            localStorage.setItem('lastAction', lastAction);
+        }
+
+        function loadPunchData() {
+            const savedClockLog = localStorage.getItem('clockLog');
+            const savedLastAction = localStorage.getItem('lastAction');
+            if (savedClockLog) {
+                clockLog = JSON.parse(savedClockLog);
+                clockLog.forEach(punch => punch.time = new Date(punch.time));
+            }
+            if (savedLastAction) {
+                lastAction = savedLastAction;
+            }
+            updateClockStatus();
+            clockLog.forEach(punch => {
+                addToLog(`${punch.type === 'in' ? 'Clocked in' : 'Clocked out'} at ${formatTime(punch.time)}`);
+            });
+        }
+
         // Dark Mode Toggle
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
             localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
         }
 
-        // Initialize dark mode from localStorage
-        if (localStorage.getItem('darkMode') === 'true') {
-            document.body.classList.add('dark-mode');
-        }
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize dark mode from localStorage
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+            }
 
-        // Initialize clock status
-        updateClockStatus();
+            // Load punch data
+            loadPunchData();
+        });
     </script>
 </body>
 </html>
