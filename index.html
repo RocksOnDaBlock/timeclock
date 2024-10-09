@@ -139,6 +139,11 @@
             .container { padding: 1rem; }
             .card { padding: 1rem; }
             .time-input { flex-direction: column; }
+            input[type="datetime-local"] {
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+            }
         }
     </style>
 </head>
@@ -189,9 +194,15 @@
         }
 
         function getTimeInputs() {
-            const time1 = document.getElementById('time1').value;
-            const time2 = document.getElementById('time2').value;
-            return [time1, time2];
+            const time1 = document.getElementById('time1').value || '00:00:00';
+            const time2 = document.getElementById('time2').value || '00:00:00';
+            return [normalizeTimeInput(time1), normalizeTimeInput(time2)];
+        }
+
+        function normalizeTimeInput(time) {
+            const parts = time.split(':');
+            while (parts.length < 3) parts.push('00');
+            return parts.map(part => part.padStart(2, '0')).join(':');
         }
 
         function addTimes(time1, time2) {
@@ -245,7 +256,8 @@
         }
 
         function editClockTime() {
-            const manualTime = new Date(document.getElementById('manualTime').value);
+            const manualTimeInput = document.getElementById('manualTime');
+            const manualTime = new Date(manualTimeInput.value);
             const editType = document.getElementById('editTimeSelect').value;
             
             if (manualTime.toString() !== "Invalid Date") {
@@ -257,6 +269,7 @@
                     addToLog(`Clock out time manually set to ${formatTime(clockOutTime)}`);
                 }
                 updateClockStatus();
+                manualTimeInput.value = ''; // Clear the input after use
             } else {
                 alert('Please enter a valid date and time.');
             }
