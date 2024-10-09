@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time Calculator & Clock In/Out System</title>
+    <title>Advanced Time Calculator & Clock System</title>
     <style>
         :root {
             --primary-color: #3498db;
@@ -40,9 +40,9 @@
             padding: 2rem;
         }
 
-        h1 {
+        h1, h2 {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
 
         .card {
@@ -59,7 +59,12 @@
             gap: 1rem;
         }
 
-        input, button {
+        .time-input {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        input, button, select {
             padding: 0.5rem 1rem;
             border: none;
             border-radius: 10px;
@@ -111,15 +116,9 @@
         }
 
         @keyframes gradientBG {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         body::before {
@@ -137,26 +136,22 @@
         }
 
         @media (max-width: 600px) {
-            .container {
-                padding: 1rem;
-            }
-
-            .card {
-                padding: 1rem;
-            }
+            .container { padding: 1rem; }
+            .card { padding: 1rem; }
+            .time-input { flex-direction: column; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Time Calculator & Clock In/Out System</h1>
+        <h1>Advanced Time Calculator & Clock System</h1>
         
         <div class="card time-calculator">
             <h2>Time Calculator</h2>
-            <input type="number" id="hours1" placeholder="Hours">
-            <input type="number" id="minutes1" placeholder="Minutes">
-            <input type="number" id="hours2" placeholder="Hours">
-            <input type="number" id="minutes2" placeholder="Minutes">
+            <div class="time-input">
+                <input type="text" id="time1" placeholder="HH:MM:SS">
+                <input type="text" id="time2" placeholder="HH:MM:SS">
+            </div>
             <button onclick="addTime()">Add</button>
             <button onclick="subtractTime()">Subtract</button>
             <div class="result" id="calculatorResult"></div>
@@ -166,8 +161,12 @@
             <h2>Clock In/Out System</h2>
             <button id="clockInBtn" onclick="clockIn()">Clock In</button>
             <button id="clockOutBtn" onclick="clockOut()">Clock Out</button>
+            <select id="editTimeSelect">
+                <option value="in">Edit Clock In</option>
+                <option value="out">Edit Clock Out</option>
+            </select>
             <input type="datetime-local" id="manualTime">
-            <button onclick="editClockIn()">Edit Clock In</button>
+            <button onclick="editClockTime()">Edit Selected Time</button>
             <div class="result" id="clockStatus"></div>
             <div class="clock-log" id="clockLog"></div>
         </div>
@@ -178,34 +177,54 @@
     <script>
         // Time Calculator
         function addTime() {
-            const [h1, m1] = getTimeInputs('1');
-            const [h2, m2] = getTimeInputs('2');
-            const totalMinutes = (h1 + h2) * 60 + m1 + m2;
-            displayResult(totalMinutes, 'add');
+            const [time1, time2] = getTimeInputs();
+            const result = addTimes(time1, time2);
+            displayResult(result);
         }
 
         function subtractTime() {
-            const [h1, m1] = getTimeInputs('1');
-            const [h2, m2] = getTimeInputs('2');
-            const totalMinutes = (h1 * 60 + m1) - (h2 * 60 + m2);
-            displayResult(totalMinutes, 'subtract');
+            const [time1, time2] = getTimeInputs();
+            const result = subtractTimes(time1, time2);
+            displayResult(result);
         }
 
-        function getTimeInputs(suffix) {
-            const hours = parseInt(document.getElementById(`hours${suffix}`).value) || 0;
-            const minutes = parseInt(document.getElementById(`minutes${suffix}`).value) || 0;
-            return [hours, minutes];
+        function getTimeInputs() {
+            const time1 = document.getElementById('time1').value;
+            const time2 = document.getElementById('time2').value;
+            return [time1, time2];
         }
 
-        function displayResult(totalMinutes, operation) {
-            const hours = Math.floor(Math.abs(totalMinutes) / 60);
-            const minutes = Math.abs(totalMinutes) % 60;
-            const sign = totalMinutes < 0 && operation === 'subtract' ? '-' : '';
-            document.getElementById('calculatorResult').textContent = `Result: ${sign}${hours}h ${minutes}m`;
+        function addTimes(time1, time2) {
+            const [h1, m1, s1] = time1.split(':').map(Number);
+            const [h2, m2, s2] = time2.split(':').map(Number);
+            
+            let totalSeconds = (h1 * 3600 + m1 * 60 + s1) + (h2 * 3600 + m2 * 60 + s2);
+            return formatSeconds(totalSeconds);
+        }
+
+        function subtractTimes(time1, time2) {
+            const [h1, m1, s1] = time1.split(':').map(Number);
+            const [h2, m2, s2] = time2.split(':').map(Number);
+            
+            let totalSeconds = (h1 * 3600 + m1 * 60 + s1) - (h2 * 3600 + m2 * 60 + s2);
+            return formatSeconds(totalSeconds);
+        }
+
+        function formatSeconds(totalSeconds) {
+            const hours = Math.floor(Math.abs(totalSeconds) / 3600);
+            const minutes = Math.floor((Math.abs(totalSeconds) % 3600) / 60);
+            const seconds = Math.abs(totalSeconds) % 60;
+            const sign = totalSeconds < 0 ? '-' : '';
+            return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function displayResult(result) {
+            document.getElementById('calculatorResult').textContent = `Result: ${result}`;
         }
 
         // Clock In/Out System
         let clockInTime = null;
+        let clockOutTime = null;
         const clockLog = [];
 
         function clockIn() {
@@ -216,22 +235,28 @@
 
         function clockOut() {
             if (clockInTime) {
-                const clockOutTime = new Date();
+                clockOutTime = new Date();
                 const duration = calculateDuration(clockInTime, clockOutTime);
                 addToLog(`Clocked out at ${formatTime(clockOutTime)}. Duration: ${duration}`);
-                clockInTime = null;
                 updateClockStatus();
             } else {
                 alert('You need to clock in first!');
             }
         }
 
-        function editClockIn() {
+        function editClockTime() {
             const manualTime = new Date(document.getElementById('manualTime').value);
+            const editType = document.getElementById('editTimeSelect').value;
+            
             if (manualTime.toString() !== "Invalid Date") {
-                clockInTime = manualTime;
+                if (editType === 'in') {
+                    clockInTime = manualTime;
+                    addToLog(`Clock in time manually set to ${formatTime(clockInTime)}`);
+                } else {
+                    clockOutTime = manualTime;
+                    addToLog(`Clock out time manually set to ${formatTime(clockOutTime)}`);
+                }
                 updateClockStatus();
-                addToLog(`Clock in time manually set to ${formatTime(clockInTime)}`);
             } else {
                 alert('Please enter a valid date and time.');
             }
@@ -241,6 +266,11 @@
             const statusElement = document.getElementById('clockStatus');
             if (clockInTime) {
                 statusElement.textContent = `Clocked in at ${formatTime(clockInTime)}`;
+                if (clockOutTime) {
+                    statusElement.textContent += `, Clocked out at ${formatTime(clockOutTime)}`;
+                    const duration = calculateDuration(clockInTime, clockOutTime);
+                    statusElement.textContent += `. Duration: ${duration}`;
+                }
             } else {
                 statusElement.textContent = 'Not clocked in';
             }
@@ -267,7 +297,8 @@
             const diff = end - start;
             const hours = Math.floor(diff / 3600000);
             const minutes = Math.floor((diff % 3600000) / 60000);
-            return `${hours}h ${minutes}m`;
+            const seconds = Math.floor((diff % 60000) / 1000);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
         // Dark Mode Toggle
